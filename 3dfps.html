@@ -1,0 +1,31 @@
+<html>
+    <head>
+        <title>3dfps</title>
+        <script src="gl-matrix.js" type="text/javascript"></script>
+        <script type="text/javascript">
+            window.mat4 = glMatrix.mat4
+            window.mat2 = glMatrix.mat2
+            window.mat2d= glMatrix.mat2d
+            window.mat3= glMatrix.mat3
+            window.mat4= glMatrix.mat4
+            window.quat= glMatrix.quat
+            window.quat2= glMatrix.quat2
+            window.vec2= glMatrix.vec2
+            window.vec3= glMatrix.vec3
+            window.vec4= glMatrix.vec4
+        </script>
+        <script src="maze.js" type="text/javascript"></script>
+        <script src="texture.js" type="text/javascript"></script>
+        <script src="shader.js" type="text/javascript"></script>
+        <script src="object-data.js" type="text/javascript"></script>
+        <script src="scene.js" type="text/javascript"></script>
+        <script src="draw-scene.js" type="text/javascript"></script>
+        <script src="webgl-main.js" type="text/javascript"></script>
+    </head>
+    <body>
+        <canvas id="canvasId" width="800" height="600"></canvas>
+        <script>
+            main();
+        </script>
+    </body>
+</html>
