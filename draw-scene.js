@@ -80,3 +80,4 @@ function setNormalAttribute(gl, buffers, programInfo) {
   gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
 }
 
+export { setPositionAttribute, setColorAttribute, setTextureAttribute, setNormalAttribute }
