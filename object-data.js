@@ -17,6 +17,8 @@ class ObjectData {
         this.indexBuffer = null;
         this.textureCoordBuffer = null;
 
+        this.texture = null;
+
         this.modelViewMatrix = mat4.create();
         this.normalMatrix = mat4.create();
 

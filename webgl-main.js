@@ -93,6 +93,50 @@ function main() {
     }
     `;
 
+  const tvsSource2 = `
+  attribute vec4 aVertexPosition;
+    attribute vec3 aVertexNormal;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uNormalMatrix;
+    uniform mat4 uModelViewMatrix;
+    uniform mat4 uProjectionMatrix;
+    uniform vec2 uvOffset;
+    uniform vec2 uvScale;
+
+    varying highp vec2 vTextureCoord;
+    varying highp vec3 vLighting;
+
+    void main(void) {
+      gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+      vTextureCoord = aTextureCoord * uvScale + uvOffset;
+
+      // Apply lighting effect
+
+      highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+      highp vec3 directionalLightColor = vec3(1, 1, 1);
+      highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
+
+      highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
+
+      highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+      vLighting = ambientLight + (directionalLightColor * directional);
+    }
+`;
+
+  const tfsSource2 =  `
+    varying highp vec2 vTextureCoord;
+    varying highp vec3 vLighting;
+
+    uniform sampler2D uSampler;
+
+    void main(void) {
+      highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
+
+      gl_FragColor = vec4(texelColor.rgb * vLighting, texelColor.a);
+    }
+    `;
+
   let shader1 = new Shader(vsSource, fsSource, {
       attribLocations: {
         vertexPosition: "aVertexPosition",
@@ -106,6 +150,21 @@ function main() {
   shader1.initShaderProgram(gl);
 
   let shader2 = new Shader(tvsSource, tfsSource, {
+    attribLocations: {
+      vertexPosition: "aVertexPosition",
+      vertexNormal: "aVertexNormal",
+      textureCoord: "aTextureCoord"
+    },
+    uniformLocations: {
+      projectionMatrix: "uProjectionMatrix",
+      modelViewMatrix: "uModelViewMatrix",
+      normalMatrix: "uNormalMatrix",
+      uSampler: "uSampler"
+    }
+  });
+  shader2.initShaderProgram(gl);
+
+  let shader3 = new Shader(tvsSource2, tfsSource2, {
       attribLocations: {
         vertexPosition: "aVertexPosition",
         vertexNormal: "aVertexNormal",
@@ -115,15 +174,12 @@ function main() {
         projectionMatrix: "uProjectionMatrix",
         modelViewMatrix: "uModelViewMatrix",
         normalMatrix: "uNormalMatrix",
-        uSampler: "uSampler"
+        uSampler: "uSampler",
+        uvOffset: "uvOffset",
+        uvScale: "uvScale"
       }
     });
-  shader2.initShaderProgram(gl);
-
-  // Initialize a shader program; this is where all the lighting
-  // for the vertices and so forth is established.
-  const shaderProgram = shader1.shaderProgram;
-  const textureShaderProgram = shader2.shaderProgram;
+  shader3.initShaderProgram(gl);
 
   // Collect all the info needed to use the shader program.
   // Look up which attributes our shader program is using
@@ -131,15 +187,13 @@ function main() {
   // look up uniform locations.
   const programInfo = shader1.programInfo;
   const program2Info = shader2.programInfo;
+  const program3Info = shader3.programInfo;
 
   let scene = new Scene(gl);
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
   scene.initBuffers(gl);
 
-  // Load texture
-  let texture = new Texture();
-  texture.loadTexture(gl, "texture.jpg");
   // Flip image pixels into the bottom-to-top order that WebGL expects.
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
@@ -185,7 +239,7 @@ function main() {
     then = now;
 
     scene.update(deltaTime);
-    scene.drawScene(gl, programInfo, program2Info, texture.glTexture);
+    scene.drawScene(gl, programInfo, program2Info, program3Info);
 
     requestAnimationFrame(render);
   }

@@ -1,6 +1,9 @@
 
 import mazeJson from './maze.json' with {type: 'json'};
 import { ObjectData } from "./object-data.js";
+import { AnimatedObjectData } from "./animated-object-data.js";
+import { Texture } from "./texture.js";
+import { SpritesheetTexture } from './spritesheet-texture.js';
 import { setPositionAttribute, setColorAttribute, setTextureAttribute, setNormalAttribute } from "./draw-scene.js";
 
 class Scene {
@@ -15,9 +18,10 @@ class Scene {
     this.cameraPosX = 0;
     this.cameraPosY = 0;
     this.cameraRotation = 0;
+    this.playerHeight = 0.6;
 
     this.objects = [];
-    this.createScene();
+    this.createScene(gl);
 
     // Create a perspective matrix, a special matrix that is
     // used to simulate the distortion of perspective in a camera.
@@ -71,10 +75,10 @@ class Scene {
     mat4.translate(
       this.newProjectionMatrix, // destination matrix
       this.newProjectionMatrix, // matrix to translate
-      [-this.cameraPosY, 0, this.cameraPosX]
+      [-this.cameraPosY, -this.playerHeight, this.cameraPosX]
     ); // amount to translate
   }
-  drawScene(gl, programInfo, program2Info, texture) {
+  drawScene(gl, programInfo, program2Info, program3Info) {
     gl.clearColor(0.0, 0.0, 0.0, 1.0); // Clear to black, fully opaque
     gl.clearDepth(1.0); // Clear everything
     gl.enable(gl.DEPTH_TEST); // Enable depth testing
@@ -90,7 +94,53 @@ class Scene {
       // buffer into the vertexPosition attribute.
       let buffers = this.objects[i].getBuffers();
 
-      if (this.objects[i].useTextureShader) {
+      if (this.objects[i].animated) {
+        setPositionAttribute(gl, buffers, program3Info);
+        setTextureAttribute(gl, buffers, program3Info);
+
+        // Tell WebGL which indices to use to index the vertices
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
+
+        setNormalAttribute(gl, buffers, program3Info);
+
+        // Tell WebGL to use our program when drawing
+        gl.useProgram(program3Info.program);
+
+        // Set the shader uniforms
+        gl.uniformMatrix4fv(
+          program3Info.uniformLocations.normalMatrix,
+          false,
+          this.objects[i].normalMatrix,
+        );
+
+        gl.uniformMatrix4fv(
+          program3Info.uniformLocations.projectionMatrix,
+          false,
+          this.newProjectionMatrix
+        );
+
+        gl.uniformMatrix4fv(
+          program3Info.uniformLocations.modelViewMatrix,
+          false,
+          this.objects[i].modelViewMatrix
+        );
+
+        let scaleY = 1 / this.objects[i].texture.numberOfFrames;
+        gl.uniform2fv(program3Info.uniformLocations.uvOffset, [0, this.objects[i].currentFrame * scaleY]);
+        gl.uniform2fv(program3Info.uniformLocations.uvScale, [1, scaleY]);
+
+        // Tell WebGL we want to affect texture unit 0
+        gl.activeTexture(gl.TEXTURE0);
+
+        // Bind the texture to texture unit 0
+        gl.bindTexture(gl.TEXTURE_2D, this.objects[i].texture.glTexture);
+
+        // Tell the shader we bound the texture to texture unit 0
+        gl.uniform1i(program3Info.uniformLocations.uSampler, 0);
+
+        this.objects[i].draw(gl, program3Info);
+      }
+      else if (this.objects[i].useTextureShader) {
         setPositionAttribute(gl, buffers, program2Info);
         setTextureAttribute(gl, buffers, program2Info);
 
@@ -125,14 +175,13 @@ class Scene {
         gl.activeTexture(gl.TEXTURE0);
 
         // Bind the texture to texture unit 0
-        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.bindTexture(gl.TEXTURE_2D, this.objects[i].texture.glTexture);
 
         // Tell the shader we bound the texture to texture unit 0
         gl.uniform1i(program2Info.uniformLocations.uSampler, 0);
 
         this.objects[i].draw(gl, program2Info);
       }
-
       else {
         setPositionAttribute(gl, buffers, programInfo);
         setColorAttribute(gl, buffers, programInfo);
@@ -159,8 +208,14 @@ class Scene {
         this.objects[i].draw(gl, programInfo);
       }
     }
+
+    for (let i = 0; i < this.objects.length; i++) {
+      if(this.objects[i].animated) {
+        this.objects[i].nextFrame();
+      }
+    }
   }
-  createScene() {
+  createScene(gl) {
     
     let mazeObject = new ObjectData(mazeJson.vertices, mazeJson.normals, null, mazeJson.indices, mazeJson.textureCoords);
     /*mat4.rotate(
@@ -169,10 +224,50 @@ class Scene {
       Math.PI / 2, // amount to rotate in radians
       [1, 0, 0]
     ); // axis to rotate around (Z)*/
-    mazeObject.vertexCount = mazeJson.indices.length - 1;
+    mazeObject.vertexCount = mazeJson.indices.length;
     mazeObject.updateNormalMatrix();
 
+    let wallTexture = new Texture();
+    wallTexture.loadTexture(gl, "texture.jpg");
+    mazeObject.texture = wallTexture;
+
     this.objects.push(mazeObject);
+
+    let floor = createPlane(47, 30);
+    let floorObject = new ObjectData(floor.vertices, floor.normals, null, floor.indices, floor.textureCoords);
+
+    let floorTexture = new Texture();
+    floorTexture.loadTexture(gl, "floorTexture.jpg");
+    floorObject.texture = floorTexture;
+    floorObject.vertexCount = floor.indices.length;
+    
+    floorObject.updateNormalMatrix();
+
+    mat4.translate(
+      floorObject.modelViewMatrix, // destination matrix
+      floorObject.modelViewMatrix, // matrix to translate
+      [23.5, 0, 15.0]
+    ); // amount to translate
+
+    this.objects.push(floorObject);
+
+
+    let spritesheetTexture = new SpritesheetTexture();
+    spritesheetTexture.loadTexture(gl, "walk_front_spritesheet.png", { numberOfFrames: 30 });
+
+    let plane = createPlane_v2(1, 1);
+    let object3 = new AnimatedObjectData(plane.vertices, plane.normals, plane.indices, plane.textureCoords, spritesheetTexture);
+    object3.vertexCount = object3.indices.length;
+
+    object3.updateNormalMatrix();
+    mat4.rotate(
+      object3.modelViewMatrix, // destination matrix
+      object3.modelViewMatrix, // matrix to translate,
+      Math.PI / 2,
+      [0, 0, 1]
+    ); // amount to translate
+
+    this.objects.push(object3);
 
     const positions = [
       // Front face
@@ -289,6 +384,8 @@ class Scene {
     let object1 = new ObjectData(positions, vertexNormals, null, indices, textureCoordinates);
     let object2 = new ObjectData(positions, vertexNormals, colors, indices, null);
 
+    object1.texture = wallTexture;
+
     let cubeRotation = 1;
     mat4.translate(
       object1.modelViewMatrix, // destination matrix
@@ -328,8 +425,121 @@ class Scene {
   }
 }
 
+function createPlane(width, depth) {
+  // Vertex positions (x, y, z)
+  const vertices = [];
+  const normals = [];
+  const texCoords = [];
+  const indices = [];
+
+  // Calculate the number of segments based on the dimensions
+  const widthSegments = Math.ceil(width);
+  const depthSegments = Math.ceil(depth);
+
+  // Loop over the grid and create vertices, normals, and texture coordinates
+  for (let z = 0; z <= depthSegments; z++) {
+      for (let x = 0; x <= widthSegments; x++) {
+          // Position each vertex
+          const xPos = x - width / 2;
+          const yPos = 0;
+          const zPos = z - depth / 2;
+
+          vertices.push(xPos, yPos, zPos);
+
+          // Normals pointing up along Y-axis
+          normals.push(0, 1, 0);
+
+          // Texture coordinates scaled to repeat every 1 unit
+          texCoords.push(x, z);
+      }
+  }
+
+  // Create indices for the grid
+  for (let z = 0; z < depthSegments; z++) {
+      for (let x = 0; x < widthSegments; x++) {
+          const topLeft = z * (widthSegments + 1) + x;
+          const topRight = topLeft + 1;
+          const bottomLeft = topLeft + (widthSegments + 1);
+          const bottomRight = bottomLeft + 1;
+
+          // First triangle
+          indices.push(topLeft, bottomLeft, topRight);
+
+          // Second triangle
+          indices.push(topRight, bottomLeft, bottomRight);
+      }
+  }
+
+  return {
+      vertices: vertices,
+      normals: normals,
+      textureCoords: texCoords,
+      indices: indices
+  };
+}
+
+function createPlane_v2(width = 1, height = 1, subdivisionsX = 1, subdivisionsY = 1) {
+  // Ensure subdivisions are at least 1
+  subdivisionsX = Math.max(1, Math.floor(subdivisionsX));
+  subdivisionsY = Math.max(1, Math.floor(subdivisionsY));
+
+  const numVertices = (subdivisionsX + 1) * (subdivisionsY + 1);
+  const positions = [];
+  const normals = [];
+  const texCoords = [];
+  const indices = [];
+
+  // Calculate the size of each subdivision
+  const dx = width / subdivisionsX;
+  const dy = height / subdivisionsY;
+
+  // Starting coordinates (bottom-left corner)
+  const startX = -width / 2;
+  const startY = -height / 2;
+
+  // Generate vertices, normals, and texture coordinates
+  for (let y = 0; y <= subdivisionsY; y++) {
+      for (let x = 0; x <= subdivisionsX; x++) {
+          // Position
+          const posX = startX + x * dx;
+          const posY = startY + y * dy;
+          const posZ = 0;
+
+          positions.push(posX, posY, posZ);
+
+          // Normal (pointing up)
+          normals.push(0, 0, 1);
+
+          // Texture coordinates
+          const u = x / subdivisionsX;
+          const v = y / subdivisionsY;
+          texCoords.push(u, v);
+      }
+  }
+
+  // Generate indices
+  for (let y = 0; y < subdivisionsY; y++) {
+      for (let x = 0; x < subdivisionsX; x++) {
+          const i0 = y * (subdivisionsX + 1) + x;
+          const i1 = i0 + 1;
+          const i2 = i0 + (subdivisionsX + 1);
+          const i3 = i2 + 1;
+
+          // First triangle
+          indices.push(i0, i2, i1);
+
+          // Second triangle
+          indices.push(i1, i2, i3);
+      }
+  }
+
+  return {
+      vertices: positions,
+      normals: normals,
+      textureCoords: texCoords,
+      indices: indices
+  };
+}
+
 export { Scene }
-
-
-
 

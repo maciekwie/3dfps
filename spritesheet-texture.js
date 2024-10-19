@@ -1,9 +1,16 @@
+import { Texture, isPowerOf2 } from "./texture.js";
 
-class Texture {
-    constructor() {
+class SpritesheetTexture extends Texture {
+    constructor()
+    {
+        super();
 
+        this.numberOfFrames = 0;
     }
-    loadTexture(gl, url) {
+
+    loadTexture(gl, url, spritesheetData) {
+        this.numberOfFrames = spritesheetData.numberOfFrames;
+
         const texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
       
@@ -43,14 +50,13 @@ class Texture {
                 srcType,
                 image,
             );
+
+            this.width = image.width;
+            this.height = image.height / this.numberOfFrames;
       
-            if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
+            if (isPowerOf2(this.width) && isPowerOf2(this.height)) {
                 // Power-of-two dimensions
                 gl.generateMipmap(gl.TEXTURE_2D);
-    
-                // Set wrapping mode to REPEAT
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
     
                 // Use mipmap minification filter
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
@@ -67,11 +73,7 @@ class Texture {
         image.src = url;
       
         this.glTexture = texture;
-      }
+    }
 }
 
-function isPowerOf2(value) {
-    return (value & (value - 1)) === 0;
-}
-
-export { Texture, isPowerOf2 }
+export { SpritesheetTexture }
