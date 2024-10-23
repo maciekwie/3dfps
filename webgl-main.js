@@ -1,7 +1,7 @@
 
 import { Scene } from "./scene.js";
 import { Shader } from "./shader.js";
-import { Texture } from "./texture.js";
+import { setPositionAttribute, setColorAttribute, setTextureAttribute, setNormalAttribute } from "./draw-scene.js";
 
 let deltaTime = 0;
 
@@ -10,25 +10,25 @@ main();
 // start here
 //
 function main() {
-  const canvas = document.querySelector("#canvasId");
-  // Initialize the GL context
-  const gl = canvas.getContext("webgl");
+    const canvas = document.querySelector("#canvasId");
+    // Initialize the GL context
+    const gl = canvas.getContext("webgl");
 
-  // Only continue if WebGL is available and working
-  if (gl === null) {
-    alert(
-      "Unable to initialize WebGL. Your browser or machine may not support it."
-    );
-    return;
-  }
+    // Only continue if WebGL is available and working
+    if (gl === null) {
+        alert(
+            "Unable to initialize WebGL. Your browser or machine may not support it."
+        );
+        return;
+    }
 
-  // Set clear color to black, fully opaque
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
-  // Clear the color buffer with specified clear color
-  gl.clear(gl.COLOR_BUFFER_BIT);
+    // Set clear color to black, fully opaque
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    // Clear the color buffer with specified clear color
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
-  // Vertex shader program
-  const vsSource = `
+    // Vertex shader program
+    const vsSource = `
       attribute vec4 aVertexPosition;
       attribute vec4 aVertexColor;
 
@@ -43,7 +43,7 @@ function main() {
       }
 `;
 
-  const fsSource = `
+    const fsSource = `
       varying lowp vec4 vColor;
 
       void main(void) {
@@ -51,7 +51,7 @@ function main() {
       }
   `;
 
-  const tvsSource = `
+    const tvsSource = `
   attribute vec4 aVertexPosition;
     attribute vec3 aVertexNormal;
     attribute vec2 aTextureCoord;
@@ -80,7 +80,7 @@ function main() {
     }
 `;
 
-  const tfsSource =  `
+    const tfsSource = `
     varying highp vec2 vTextureCoord;
     varying highp vec3 vLighting;
 
@@ -93,7 +93,7 @@ function main() {
     }
     `;
 
-  const tvsSource2 = `
+    const tvsSource2 = `
   attribute vec4 aVertexPosition;
     attribute vec3 aVertexNormal;
     attribute vec2 aTextureCoord;
@@ -124,7 +124,7 @@ function main() {
     }
 `;
 
-  const tfsSource2 =  `
+    const tfsSource2 = `
     varying highp vec2 vTextureCoord;
     varying highp vec3 vLighting;
 
@@ -137,113 +137,183 @@ function main() {
     }
     `;
 
-  let shader1 = new Shader(vsSource, fsSource, {
-      attribLocations: {
-        vertexPosition: "aVertexPosition",
-        vertexColor: "aVertexColor"
-      },
-      uniformLocations: {
-        projectionMatrix: "uProjectionMatrix",
-        modelViewMatrix: "uModelViewMatrix"
-      }
-  });
-  shader1.initShaderProgram(gl);
-
-  let shader2 = new Shader(tvsSource, tfsSource, {
-    attribLocations: {
-      vertexPosition: "aVertexPosition",
-      vertexNormal: "aVertexNormal",
-      textureCoord: "aTextureCoord"
-    },
-    uniformLocations: {
-      projectionMatrix: "uProjectionMatrix",
-      modelViewMatrix: "uModelViewMatrix",
-      normalMatrix: "uNormalMatrix",
-      uSampler: "uSampler"
-    }
-  });
-  shader2.initShaderProgram(gl);
-
-  let shader3 = new Shader(tvsSource2, tfsSource2, {
-      attribLocations: {
-        vertexPosition: "aVertexPosition",
-        vertexNormal: "aVertexNormal",
-        textureCoord: "aTextureCoord"
-      },
-      uniformLocations: {
-        projectionMatrix: "uProjectionMatrix",
-        modelViewMatrix: "uModelViewMatrix",
-        normalMatrix: "uNormalMatrix",
-        uSampler: "uSampler",
-        uvOffset: "uvOffset",
-        uvScale: "uvScale"
-      }
+    let shader1 = new Shader(vsSource, fsSource, {
+        attribLocations: {
+            vertexPosition: "aVertexPosition",
+            vertexColor: "aVertexColor"
+        },
+        uniformLocations: {
+            projectionMatrix: "uProjectionMatrix",
+            modelViewMatrix: "uModelViewMatrix"
+        }
     });
-  shader3.initShaderProgram(gl);
+    shader1.initShaderProgram(gl);
 
-  // Collect all the info needed to use the shader program.
-  // Look up which attributes our shader program is using
-  // for aVertexPosition, aVertexColor and also
-  // look up uniform locations.
-  const programInfo = shader1.programInfo;
-  const program2Info = shader2.programInfo;
-  const program3Info = shader3.programInfo;
+    let shader2 = new Shader(tvsSource, tfsSource, {
+        attribLocations: {
+            vertexPosition: "aVertexPosition",
+            vertexNormal: "aVertexNormal",
+            textureCoord: "aTextureCoord"
+        },
+        uniformLocations: {
+            projectionMatrix: "uProjectionMatrix",
+            modelViewMatrix: "uModelViewMatrix",
+            normalMatrix: "uNormalMatrix",
+            uSampler: "uSampler"
+        }
+    });
+    shader2.initShaderProgram(gl);
+    shader2.setAttributes = (gl, object) => {
+        let buffers = object.getBuffers();
+        let programInfo = object.shader.programInfo;
 
-  let scene = new Scene(gl);
-  // Here's where we call the routine that builds all the
-  // objects we'll be drawing.
-  scene.initBuffers(gl);
+        setPositionAttribute(gl, buffers, programInfo);
+        setTextureAttribute(gl, buffers, programInfo);
 
-  // Flip image pixels into the bottom-to-top order that WebGL expects.
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
 
-  document.addEventListener("keydown", (event) => {
-    const keyName = event.key;
-
-    if(keyName == "ArrowUp") {
-      scene.arrowUp = true;
+        setNormalAttribute(gl, buffers, programInfo);
     }
-    else if(keyName == "ArrowDown") {
-      scene.arrowDown= true;
-    }
-    else if(keyName == "ArrowLeft") {
-      scene.arrowLeft = true;
-    }
-    else if(keyName == "ArrowRight") {
-      scene.arrowRight = true;
-    }
-  });
 
-  document.addEventListener("keyup", (event) => {
-    const keyName = event.key;
+    shader2.setUniforms = (gl, object) => {
+        let programInfo = object.shader.programInfo;
 
-    if(keyName == "ArrowUp") {
-      scene.arrowUp = false;
-    }
-    else if(keyName == "ArrowDown") {
-      scene.arrowDown = false;
-    }
-    else if(keyName == "ArrowLeft") {
-      scene.arrowLeft = false;
-    }
-    else if(keyName == "ArrowRight") {
-      scene.arrowRight = false;
-    }
-  });
+        gl.uniformMatrix4fv(
+            programInfo.uniformLocations.normalMatrix,
+            false,
+            object.normalMatrix
+        );
+        gl.uniformMatrix4fv(
+            programInfo.uniformLocations.projectionMatrix,
+            false,
+            object.projectionMatrix
+        );
+        gl.uniformMatrix4fv(
+            programInfo.uniformLocations.modelViewMatrix,
+            false,
+            object.modelViewMatrix
+        );
 
-  let then = 0;
-  // Draw the scene repeatedly
-  function render(now) {
-    now *= 0.001; // convert to seconds
-    deltaTime = now - then;
-    then = now;
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, object.texture.glTexture);
+        gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
+    }
 
-    scene.update(deltaTime);
-    scene.drawScene(gl, programInfo, program2Info, program3Info);
+    let shader3 = new Shader(tvsSource2, tfsSource2, {
+        attribLocations: {
+            vertexPosition: "aVertexPosition",
+            vertexNormal: "aVertexNormal",
+            textureCoord: "aTextureCoord"
+        },
+        uniformLocations: {
+            projectionMatrix: "uProjectionMatrix",
+            modelViewMatrix: "uModelViewMatrix",
+            normalMatrix: "uNormalMatrix",
+            uSampler: "uSampler",
+            uvOffset: "uvOffset",
+            uvScale: "uvScale"
+        }
+    });
+    shader3.initShaderProgram(gl);
+    shader3.setAttributes = (gl, object) => {
+        let buffers = object.getBuffers();
+        let programInfo = object.shader.programInfo;
 
+        setPositionAttribute(gl, buffers, programInfo);
+        setTextureAttribute(gl, buffers, programInfo);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
+
+        setNormalAttribute(gl, buffers, programInfo);
+    }
+    shader3.setUniforms = (gl, object, projectionMatrix) => {
+        let programInfo = object.shader.programInfo;
+
+        gl.uniformMatrix4fv(
+            programInfo.uniformLocations.normalMatrix,
+            false,
+            object.normalMatrix,
+        );
+        gl.uniformMatrix4fv(
+            programInfo.uniformLocations.projectionMatrix,
+            false,
+            object.projectionMatrix
+        );
+        gl.uniformMatrix4fv(
+            programInfo.uniformLocations.modelViewMatrix,
+            false,
+            object.modelViewMatrix
+        );
+
+        let scaleY = 1 / object.texture.numberOfFrames;
+        gl.uniform2fv(programInfo.uniformLocations.uvOffset, [0, object.currentFrame * scaleY]);
+        gl.uniform2fv(programInfo.uniformLocations.uvScale, [1, scaleY]);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, object.texture.glTexture);
+
+        gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
+    }
+
+    let scene = new Scene(gl);
+
+    scene.createScene(gl, shader1, shader2, shader3);
+    scene.cameraPosX = -2;
+    scene.cameraPosY = 2;
+    scene.cameraRotation = 2;
+
+    scene.initBuffers(gl);
+
+    // Flip image pixels into the bottom-to-top order that WebGL expects.
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+    document.addEventListener("keydown", (event) => {
+        const keyName = event.key;
+
+        if (keyName == "ArrowUp") {
+            scene.arrowUp = true;
+        }
+        else if (keyName == "ArrowDown") {
+            scene.arrowDown = true;
+        }
+        else if (keyName == "ArrowLeft") {
+            scene.arrowLeft = true;
+        }
+        else if (keyName == "ArrowRight") {
+            scene.arrowRight = true;
+        }
+    });
+
+    document.addEventListener("keyup", (event) => {
+        const keyName = event.key;
+
+        if (keyName == "ArrowUp") {
+            scene.arrowUp = false;
+        }
+        else if (keyName == "ArrowDown") {
+            scene.arrowDown = false;
+        }
+        else if (keyName == "ArrowLeft") {
+            scene.arrowLeft = false;
+        }
+        else if (keyName == "ArrowRight") {
+            scene.arrowRight = false;
+        }
+    });
+
+    let then = 0;
+    // Draw the scene repeatedly
+    function render(now) {
+        now *= 0.001; // convert to seconds
+        deltaTime = now - then;
+        then = now;
+
+        scene.update(deltaTime);
+        scene.drawScene(gl);
+
+        requestAnimationFrame(render);
+    }
     requestAnimationFrame(render);
-  }
-  requestAnimationFrame(render);
 }
 
 //

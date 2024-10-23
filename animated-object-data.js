@@ -2,17 +2,14 @@ import { ObjectData } from "./object-data.js";
 
 class AnimatedObjectData extends ObjectData
 {
-    constructor(vertexData, vertexNormals, indices, textureCoordinates, texture)
-    {
-        super(vertexData, vertexNormals, null, indices, textureCoordinates);
-        this.texture = texture;
+    constructor(vertexData, vertexNormals, textureCoordinates, indices, texture, shader) {
+        super(vertexData, vertexNormals, textureCoordinates, indices, texture, shader);
 
         this.currentFrame = 0;
         this.animated = true;
     }
 
-    nextFrame()
-    {
+    nextFrame() {
         this.currentFrame++;
         if(this.currentFrame >= this.texture.numberOfFrames)
         {

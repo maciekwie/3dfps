@@ -30,6 +30,7 @@ class Shader {
 
         this.setProgramInfo(gl, this.sourceInfo);
     }
+
     setProgramInfo(gl, info) {
         let programInfo = {
             program: this.shaderProgram
@@ -54,6 +55,18 @@ class Shader {
         }
 
         this.programInfo = programInfo;
+    }
+    
+    setAttributes(gl, object) {
+
+    }
+
+    setUniforms(gl, object) {
+
+
+    }
+    useProgram(gl) {
+        gl.useProgram(this.programInfo.program);
     }
 }
 

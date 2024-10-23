@@ -1,15 +1,16 @@
 
 class ObjectData {
-    constructor(vertexData, vertexNormals, colorData, indices, textureCoordinates) {
+    constructor(vertexData, vertexNormals, textureCoordinates, indices, texture, shader) {
         this.vertexData = vertexData;
         this.vertexNormals = vertexNormals;
-        this.colorData = colorData;
         this.indices = indices;
         this.textureCoordinates = textureCoordinates;
 
-        this.useTextureShader = false;
-        if (textureCoordinates != null)
-            this.useTextureShader = true;
+        this.texture = texture;
+        this.shader = shader;
+
+        if(indices != null)
+            this.vertexCount = indices.length;
 
         this.vertexBuffer = null;
         this.normalBuffer = null;
@@ -17,17 +18,21 @@ class ObjectData {
         this.indexBuffer = null;
         this.textureCoordBuffer = null;
 
-        this.texture = null;
+        this.createModelViewMarix();
+    }
 
+    createModelViewMarix() {
         this.modelViewMatrix = mat4.create();
         this.normalMatrix = mat4.create();
 
-        this.vertexCount = 36;
+        this.updateNormalMatrix();
     }
+
     updateNormalMatrix() {
         mat4.invert(this.normalMatrix, this.modelViewMatrix);
         mat4.transpose(this.normalMatrix, this.normalMatrix);
     }
+
     getBuffers() {
         return {
             position: this.vertexBuffer,
@@ -37,6 +42,7 @@ class ObjectData {
             textureCoord: this.textureCoordBuffer
         };
     }
+
     initBuffers(gl) {
         this.gl = gl;
 
@@ -51,6 +57,7 @@ class ObjectData {
         if (this.textureCoordBuffer == null)
             this.initTextureBuffer();
     }
+
     initVertexBuffer() {
         const gl = this.gl;
 
@@ -62,6 +69,7 @@ class ObjectData {
 
         this.vertexBuffer = vertexBuffer;
     }
+
     initNormalBuffer() {
         const gl = this.gl;
 
@@ -76,6 +84,7 @@ class ObjectData {
 
         this.normalBuffer = normalBuffer;
     }
+
     initColorBuffer() {
         if (this.colorData == null)
             return;
@@ -90,6 +99,7 @@ class ObjectData {
 
         this.colorBuffer = colorBuffer;
     }
+
     initIndexBuffer() {
         const gl = this.gl;
 
@@ -106,6 +116,7 @@ class ObjectData {
 
         this.indexBuffer = indexBuffer;
     }
+
     initTextureBuffer() {
         if (this.useTextureShader == false)
             return;
@@ -123,7 +134,14 @@ class ObjectData {
 
         this.textureCoordBuffer = textureCoordBuffer;
     }
-    draw(gl, programInfo) {
+
+    draw(gl, projectionMatrix) {
+        this.projectionMatrix = projectionMatrix;
+        
+        this.shader.setAttributes(gl, this);
+        this.shader.useProgram(gl);
+        this.shader.setUniforms(gl, this);
+
         const type = gl.UNSIGNED_SHORT;
         const offset = 0;
         gl.drawElements(gl.TRIANGLES, this.vertexCount, type, offset);
