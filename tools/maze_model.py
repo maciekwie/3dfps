@@ -86,6 +86,16 @@ def main():
     pixels = np.array(image)
     height, width = pixels.shape
 
+    # Create wall_map where wall_map[x][y] = 1 when pixel at position x, y is black
+    # Initialize wall_map with zeros
+    wall_map = np.zeros((width, height), dtype=int)
+
+    # Populate wall_map
+    for i in range(height):
+        for j in range(width):
+            if pixels[i, j] == 0:
+                wall_map[j, i] = 1
+
     # Parameters
     height_scale = 0.1  # Adjust as needed
     vertices = []
@@ -119,7 +129,8 @@ def main():
         "vertices": vertices,
         "normals": normals,
         "colors": colors,
-        "indices": indices
+        "indices": indices,
+        "wall_map": wall_map.tolist()
     }
 
     # Write to JSON file

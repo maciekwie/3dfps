@@ -258,8 +258,8 @@ function main() {
     let scene = new Scene(gl);
 
     scene.createScene(gl, shader1, shader2, shader3);
-    scene.cameraPosX = -2;
-    scene.cameraPosY = 2;
+    scene.cameraPosX = -3;
+    scene.cameraPosY = 3;
     scene.cameraRotation = 2;
 
     scene.initBuffers(gl);

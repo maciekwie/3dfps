@@ -52,19 +52,36 @@ class Scene {
     update(deltaTime) {
         const moveSpeed = 3;
 
+        let newCameraPosX = this.cameraPosX;
+        let newCameraPosY = this.cameraPosY;
+
         if (this.arrowUp) {
-            this.cameraPosX += moveSpeed * Math.cos(this.cameraRotation) * deltaTime;
-            this.cameraPosY += moveSpeed * Math.sin(this.cameraRotation) * deltaTime;
+            newCameraPosX += moveSpeed * Math.cos(this.cameraRotation) * deltaTime;
+            newCameraPosY += moveSpeed * Math.sin(this.cameraRotation) * deltaTime;
         }
         else if (this.arrowDown) {
-            this.cameraPosX -= moveSpeed * Math.cos(this.cameraRotation) * deltaTime;
-            this.cameraPosY -= moveSpeed * Math.sin(this.cameraRotation) * deltaTime;
+            newCameraPosX -= moveSpeed * Math.cos(this.cameraRotation) * deltaTime;
+            newCameraPosY -= moveSpeed * Math.sin(this.cameraRotation) * deltaTime;
         }
         if (this.arrowRight) {
             this.cameraRotation += 1 * deltaTime;
         }
         else if (this.arrowLeft) {
             this.cameraRotation -= 1 * deltaTime;
+        }
+
+        if(this.checkWallCollision(newCameraPosX, newCameraPosY) == false)
+        {
+            this.cameraPosX = newCameraPosX;
+            this.cameraPosY = newCameraPosY;
+        }
+        else if(this.checkWallCollision(newCameraPosX, this.cameraPosY) == false)
+        {
+            this.cameraPosX = newCameraPosX;
+        }
+        else if(this.checkWallCollision(this.cameraPosX, newCameraPosY) == false)
+        {
+            this.cameraPosY = newCameraPosY;
         }
 
         mat4.rotate(
@@ -84,6 +101,19 @@ class Scene {
         {
             this.enemies[i].update(this.cameraPosX, this.cameraPosY, this.cameraRotation);
         }
+    }
+
+    checkWallCollision(posX, posY) {
+        let x = Math.round(-posX - 0.5);
+        let y = Math.round(posY - 0.5);
+
+        if(x < 0 || y < 0 || y > this.wallMap.length || x > this.wallMap[0].length)
+            return false;
+
+        if (this.wallMap[y][x] == 1)
+            return true;
+        else
+            return false;
     }
 
     drawScene(gl) {
@@ -119,6 +149,8 @@ class Scene {
 
         let mazeObject = new ObjectData(mazeJson.vertices, mazeJson.normals, mazeJson.textureCoords, mazeJson.indices, wallTexture, shader2);
         this.objects.push(mazeObject);
+
+        this.wallMap = mazeJson.wall_map;
 
         let floor = createPlane(47, 30);
         let floorObject = new ObjectData(floor.vertices, floor.normals, floor.textureCoords, floor.indices, floorTexture, shader2);
