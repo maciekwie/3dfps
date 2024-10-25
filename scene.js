@@ -56,18 +56,18 @@ class Scene {
         let newCameraPosY = this.cameraPosY;
 
         if (this.arrowUp) {
-            newCameraPosX += moveSpeed * Math.cos(this.cameraRotation) * deltaTime;
-            newCameraPosY += moveSpeed * Math.sin(this.cameraRotation) * deltaTime;
+            newCameraPosX -= moveSpeed * Math.sin(this.cameraRotation) * deltaTime;
+            newCameraPosY -= moveSpeed * Math.cos(this.cameraRotation) * deltaTime;
         }
         else if (this.arrowDown) {
-            newCameraPosX -= moveSpeed * Math.cos(this.cameraRotation) * deltaTime;
-            newCameraPosY -= moveSpeed * Math.sin(this.cameraRotation) * deltaTime;
+            newCameraPosX += moveSpeed * Math.sin(this.cameraRotation) * deltaTime;
+            newCameraPosY += moveSpeed * Math.cos(this.cameraRotation) * deltaTime;
         }
         if (this.arrowRight) {
-            this.cameraRotation += 1 * deltaTime;
+            this.cameraRotation -= 1 * deltaTime;
         }
         else if (this.arrowLeft) {
-            this.cameraRotation -= 1 * deltaTime;
+            this.cameraRotation += 1 * deltaTime;
         }
 
         if(this.checkWallCollision(newCameraPosX, newCameraPosY) == false)
@@ -88,13 +88,13 @@ class Scene {
             this.newProjectionMatrix, // destination matrix
             this.projectionMatrix, // matrix to rotate
             this.cameraRotation, // amount to rotate in radians
-            [0, 1, 0]
+            [0, -1, 0]
         );
 
         mat4.translate(
             this.newProjectionMatrix, // destination matrix
             this.newProjectionMatrix, // matrix to translate
-            [-this.cameraPosY, -this.playerHeight, this.cameraPosX]
+            [-this.cameraPosX, -this.playerHeight, -this.cameraPosY]
         ); 
 
         for(let i = 0; i < this.enemies.length; i++)
@@ -104,13 +104,13 @@ class Scene {
     }
 
     checkWallCollision(posX, posY) {
-        let x = Math.round(-posX - 0.5);
+        let x = Math.round(posX - 0.5);
         let y = Math.round(posY - 0.5);
 
-        if(x < 0 || y < 0 || y > this.wallMap.length || x > this.wallMap[0].length)
+        if(x < 0 || y < 0 || x > this.wallMap.length || y > this.wallMap[0].length)
             return false;
 
-        if (this.wallMap[y][x] == 1)
+        if (this.wallMap[x][y] == 1)
             return true;
         else
             return false;
