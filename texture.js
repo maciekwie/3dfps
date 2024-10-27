@@ -62,6 +62,9 @@ class Texture {
                 // Use non-mipmap minification filter
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
             }
+
+            this.width = image.width;
+            this.height = image.height;
         };
 
         image.src = url;

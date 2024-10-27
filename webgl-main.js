@@ -244,10 +244,9 @@ function main() {
             false,
             object.modelViewMatrix
         );
-
-        let scaleY = 1 / object.texture.numberOfFrames;
-        gl.uniform2fv(programInfo.uniformLocations.uvOffset, [0, object.currentFrame * scaleY]);
-        gl.uniform2fv(programInfo.uniformLocations.uvScale, [1, scaleY]);
+        
+        gl.uniform2fv(programInfo.uniformLocations.uvOffset, [object.GetFramePosX() / object.texture.width, 1 - (object.GetFramePosY() + object.GetFrameHeight()) / object.texture.height]);
+        gl.uniform2fv(programInfo.uniformLocations.uvScale, [object.GetFrameWidth() / object.texture.width, object.GetFrameHeight() / object.texture.height]);
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, object.texture.glTexture);
@@ -260,7 +259,7 @@ function main() {
     scene.createScene(gl, shader1, shader2, shader3);
     scene.cameraPosX = 3;
     scene.cameraPosY = 3;
-    scene.cameraRotation = 2;
+    scene.cameraRotation = -2;
 
     scene.initBuffers(gl);
 

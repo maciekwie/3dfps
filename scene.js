@@ -1,5 +1,7 @@
 
 import mazeJson from './maze.json' with { type: 'json' };
+import animations from './animations.json' with { type: 'json' };
+import atlasData from './atlas_data.json' with { type: 'json' };
 import { ObjectData } from './object-data.js';
 import { AnimatedObjectData } from './animated-object-data.js';
 import { Texture } from './texture.js';
@@ -97,9 +99,10 @@ class Scene {
             [-this.cameraPosX, -this.playerHeight, -this.cameraPosY]
         ); 
 
+        let that = this;
         for(let i = 0; i < this.enemies.length; i++)
         {
-            this.enemies[i].update(this.cameraPosX, this.cameraPosY, this.cameraRotation);
+            this.enemies[i].update(deltaTime, this.cameraPosX, this.cameraPosY, that);
         }
     }
 
@@ -143,8 +146,8 @@ class Scene {
         let floorTexture = new Texture();
         floorTexture.loadTexture(gl, "floorTexture.jpg");
 
-        let spritesheetTexture = new SpritesheetTexture();
-        spritesheetTexture.loadTexture(gl, "walk_front_spritesheet.png", { numberOfFrames: 30 });
+        let spritesheetTexture = new Texture();
+        spritesheetTexture.loadTexture(gl, "atlas.png");
 
 
         let mazeObject = new ObjectData(mazeJson.vertices, mazeJson.normals, mazeJson.textureCoords, mazeJson.indices, wallTexture, shader2);
@@ -165,7 +168,7 @@ class Scene {
 
         let plane = createPlane_v2(0.6, 1);
         let enemyObject = new AnimatedObjectData(plane.vertices, plane.normals, plane.textureCoords, plane.indices, spritesheetTexture, shader3);
-
+        enemyObject.setAnimations(animations.animations, atlasData);
 
         let enemy1 = new Enemy(3, 3, enemyObject);
         this.enemies.push(enemy1);
