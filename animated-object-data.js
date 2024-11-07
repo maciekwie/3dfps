@@ -63,6 +63,34 @@ class AnimatedObjectData extends ObjectData
     GetFrameHeight() {
         return this.currentAnimation.frames[this.currentFrame].height;
     }
+
+    draw(gl, projectionMatrix) {
+        this.projectionMatrix = projectionMatrix;
+        
+        this.shader.setAttributes(gl, this);
+        this.shader.useProgram(gl);
+        this.shader.setUniforms(gl, this);
+
+        const type = gl.UNSIGNED_SHORT;
+        const offset = 0;
+
+        gl.enable(gl.STENCIL_TEST);
+
+        //begin mask
+        gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+        gl.clearStencil(0);
+        gl.clear(gl.STENCIL_BUFFER_BIT);
+        //draw the mask
+        gl.drawElements(gl.TRIANGLES, this.vertexCount, type, offset);
+        
+        gl.stencilFunc(gl.EQUAL, 0, 0xFF);
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+        // draw the masked element
+        gl.drawElements(gl.TRIANGLES, this.vertexCount, type, offset);
+
+        gl.disable(gl.STENCIL_TEST);
+    }
 }
 
 export { AnimatedObjectData }

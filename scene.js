@@ -124,14 +124,19 @@ class Scene {
         gl.clearDepth(1.0); // Clear everything
         gl.enable(gl.DEPTH_TEST); // Enable depth testing
         gl.depthFunc(gl.LEQUAL); // Near things obscure far things
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.enable(gl.BLEND);
 
         // Clear the canvas before we start drawing on it.
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        
         for (let i = 0; i < this.objects.length; i++) {
             this.objects[i].draw(gl, this.newProjectionMatrix);
         }
+    }
 
+    nextFrame()
+    {
         for (let i = 0; i < this.objects.length; i++) {
             if (this.objects[i].animated) {
                 this.objects[i].nextFrame();

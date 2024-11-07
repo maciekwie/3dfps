@@ -12,7 +12,7 @@ main();
 function main() {
     const canvas = document.querySelector("#canvasId");
     // Initialize the GL context
-    const gl = canvas.getContext("webgl");
+    const gl = canvas.getContext("webgl", {stencil: true});
 
     // Only continue if WebGL is available and working
     if (gl === null) {
@@ -132,6 +132,8 @@ function main() {
 
     void main(void) {
       highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
+
+      if (texelColor.a == 0.0) discard;
 
       gl_FragColor = vec4(texelColor.rgb * vLighting, texelColor.a);
     }
@@ -301,14 +303,23 @@ function main() {
     });
 
     let then = 0;
+    let lastFrame = 0;
     // Draw the scene repeatedly
     function render(now) {
         now *= 0.001; // convert to seconds
         deltaTime = now - then;
         then = now;
 
+        let timeSinceLastFrame = now - lastFrame;
+
         scene.update(deltaTime);
         scene.drawScene(gl);
+
+        if(timeSinceLastFrame > (1/30))
+        {
+            scene.nextFrame();
+            lastFrame = now;
+        }
 
         requestAnimationFrame(render);
     }
